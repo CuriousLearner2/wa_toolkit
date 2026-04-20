@@ -65,14 +65,12 @@ class SessionManager:
     def create(self, phone: str, initial_state: str) -> dict:
         """Upsert a fresh session in initial_state with empty temp_data."""
 
-    def update_state(self, phone: str, state: str) -> None:
-        """Transition to a new state."""
-
-    def update_data(self, phone: str, data: dict) -> None:
-        """Merge new fields into temp_data."""
-
     def update(self, phone: str, state: str, data: dict) -> None:
-        """Transition state and merge data in a single write."""
+        """
+        Transition state and merge data in a single write.
+        Internal helper methods for state-only or data-only writes are NOT exposed
+        to ensure transactional consistency.
+        """
 
     def delete(self, phone: str) -> None:
         """Delete the session (on STOP/CANCEL)."""
@@ -86,7 +84,7 @@ Only the table name is project-specific. The schema stays constant across projec
 
 A simple registry that maps state names to handler functions and dispatches incoming messages.
 
-**Design Insights (V1):**
+**Design Insights:**
 *   **Media Readiness**: The `handle` method accepts `Any` for the message parameter. This allows future V2 handlers to process complex objects (containing image URLs or MIME types) while remaining compatible with simple text strings today.
 *   **Robustness**: The `handle` method includes a global `try/except` wrapper. If a domain handler throws an unhandled exception, the StateMachine catches it, logs the trace, and returns a configurable "Technical Error" message to the user, preventing the entire bot process from crashing.
 
@@ -154,14 +152,6 @@ class AIExtractor:
         """
 ```
 
-**Retry policy** (from Replate, carried forward unchanged):
-- 5 attempts
-- Exponential backoff: 4s min, 20s max
-- Retries on any exception
-- Falls back to `fallback_model` after primary fails
-- Falls back to `mock_fn` after fallback fails
-- If no `mock_fn` is provided, re-raises the last exception
-
 ---
 
 ### `simulator.py` — REPL Harness
@@ -172,7 +162,7 @@ A command-line loop for testing a bot locally without Meta infrastructure.
 
 ```python
 def run(
-    handle_fn: Callable[[str, str], str],
+    handle_fn: Callable[[str, Any], str],
     default_phone: str = "+14155550000",
     banner: str = "WhatsApp Bot Simulator",
 ):
@@ -190,13 +180,13 @@ def run(
 
 1. **Dependency Stability**: `wa_toolkit` pins its dependencies (like `supabase-py` and `google-genai`) to specific versions to ensure that host projects (like Replate) don't face breaking changes during upstream updates.
 2. **Stateless Handlers**: Handlers MUST remain pure functions of `(phone, message, data)`. They should not manage database connections or persistence directly; that is the role of the `StateMachine` and `SessionManager`.
-3. **Graceful Degradation**: If the AI extraction fails all retries and fallback models, it must return a valid JSON object with the `requires_review` flag set to `true`, rather than crashing.
+3. **Graceful Degradation**: If the AI extraction fails all retries and fallback models, it must return a valid JSON object with a project-defined flag (e.g., `requires_review: true`) indicating that human intervention is needed, rather than crashing.
 
 ---
 
 ## Roadmap / V2
 
-- **Media Support**: Expand the `message` object to handle WhatsApp images, documents, and voice notes.
+- **Rich Media**: Implementation of a `Message` object to parse image URLs and voice notes.
 - **Provider Agnostic**: Support for Twilio and Meta Cloud API through a unified `MessageAdapter`.
 - **Advanced State Persistence**: Support for Redis as a faster alternative to Supabase for high-concurrency bots.
 
@@ -206,9 +196,13 @@ def run(
 
 ### 1. Install
 
+The library is currently in development. You can install it in editable mode:
+
 ```bash
-pip install wa-toolkit   # or: pip install -e path/to/wa_toolkit
+pip install -e .
 ```
+
+*Note: A formal `pyproject.toml` or `setup.py` for PyPI distribution is planned for V1 release.*
 
 ### 2. Set up Supabase
 
@@ -228,7 +222,7 @@ CREATE TABLE whatsapp_sessions (
 Each handler is a plain function:
 
 ```python
-def handle_description(phone: str, message: str, data: dict) -> tuple[str, str, dict]:
+def handle_description(phone: str, message: Any, data: dict) -> tuple[str, str, dict]:
     result = extractor.extract(prompt=f'Parse this: "{message}"', schema={...})
     data.update(result)
     reply = f"Got it: {result['item']}. Does that look right? (Yes / correct me)"
@@ -252,6 +246,6 @@ sm.register("AWAITING_DESC",   handle_description)
 sm.register("AWAITING_REVIEW", handle_review)
 sm.register("COMPLETED",       handle_done)
 
-def handle_message(phone: str, message: str) -> str:
+def handle_message(phone: str, message: Any) -> str:
     return sm.handle(phone, message)
 ```
