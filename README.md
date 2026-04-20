@@ -150,6 +150,11 @@ class AIExtractor:
         matching schema. Retries with exponential backoff (5 attempts),
         falls back to fallback_model, then to mock_fn if all else fails.
         """
+
+**Retry policy**:
+- **5 attempts** with exponential backoff: 4s min, 20s max.
+- **Model Fallback**: If the primary model fails (quota or API error), it automatically tries the fallback model.
+- **Graceful Failure**: If both models fail, it calls the `mock_fn` (if provided). If no mock function exists, it re-raises the final exception.
 ```
 
 ---

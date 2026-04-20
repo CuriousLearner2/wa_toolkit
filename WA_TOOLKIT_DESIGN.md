@@ -70,10 +70,15 @@ The orchestrator. It manages the lifecycle of a message from arrival to reply.
 **Base Class**: `AIExtractor`
 A wrapper around the Google GenAI SDK (Gemini) with built-in resilience.
 
-**Robustness Strategy:**
-- **Exponential Backoff**: 5 retries starting at 4s.
-- **Model Fallback**: Automatically switches from `gemini-flash-latest` to `gemini-flash-lite-latest` on failure.
-- **Offline Mode**: If `MOCK_AI=true`, it skips the API and calls a project-provided `mock_fn`.
+**Robustness Strategy & Retry Policy:**
+1.  **Attempts**: The system makes up to **5 attempts** per extraction.
+2.  **Backoff**: Uses exponential backoff (min 4s, max 20s) between retries to handle rate limits (429) or transient API failures.
+3.  **Model Fallback Chain**:
+    *   Primary: Attempt using `gemini-flash-latest`.
+    *   Fallback: On primary failure, switch to `gemini-flash-lite-latest` for higher throughput/lower cost.
+4.  **Final Fallback (Mock)**: If both models fail after all retries, the system calls the project-provided `mock_fn` (e.g., regex-based extraction).
+5.  **Termination**: If no `mock_fn` is provided and the chain fails, a `AIExtractionError` is raised.
+6.  **Offline Mode**: If `MOCK_AI=true` in the environment, it bypasses the API entirely and calls the `mock_fn`.
 
 ### 3.4 Simulator (`simulator.py`)
 A REPL-based interface for rapid local testing.
