@@ -46,17 +46,19 @@ Responsible for persistence. It assumes a specific PostgreSQL schema in Supabase
 - **Methods**:
     - `get(phone)`: Returns a `dict` representing the session.
     - `create(phone, state)`: Initializes a session using `.upsert()`.
-    - `update(phone, state, data)`: Persists both `state` and `temp_data` in a single `.update()` call to ensure transactional consistency.
+    - `update(phone, state, data)`: Persists both `state` and `temp_data` in a single `.update()` call to ensure transactional consistency. Individual methods for updating state or data independently are NOT exposed in the public API.
 
 ### 3.2 StateMachine (`state_machine.py`)
+**Base Class**: `StateMachine`
 The orchestrator. It manages the lifecycle of a message from arrival to reply.
 
 **Key Features:**
 - **Command Interception**: Intercepts "system" commands (`RESET`, `STOP`, `NEW`) before they reach domain handlers.
 - **Robust Error Handling**: Wraps handler execution in `try/except` to prevent bot crashes.
-- **V1 Media Readiness**: The `handle(phone, message)` signature accepts `Any` for the message to remain forward-compatible with V2 rich-media objects.
+- **V1 Media Readiness**: The `handle(phone, message)` signature accepts `Any` for the message to remain forward-compatible with future V2 rich-media objects (containing URLs or MIME types).
 
 ### 3.3 AIExtractor (`ai_extractor.py`)
+**Base Class**: `AIExtractor`
 A wrapper around the Google GenAI SDK (Gemini) with built-in resilience.
 
 **Robustness Strategy:**
@@ -67,9 +69,7 @@ A wrapper around the Google GenAI SDK (Gemini) with built-in resilience.
 ### 3.4 Simulator (`simulator.py`)
 A REPL-based interface for rapid local testing.
 
-**Features:**
-- Provides a clean loop for donor-bot interaction.
-- Allows overriding the phone number via `--phone` for testing multi-session logic.
+**API Compatibility**: The `run()` method accepts a handler function with the signature `(phone: str, message: Any) -> str`, ensuring full compatibility with the `StateMachine.handle` method.
 
 ## 4. Error Handling & Exceptions (`errors.py`)
 The toolkit defines a hierarchy of exceptions:
@@ -104,10 +104,13 @@ Domain handlers registered with the `StateMachine` MUST adhere to the following 
 - **No-Op Logic**: If a handler makes no changes to the data, it should return the original `data` object to avoid redundant DB writes.
 
 ### 6.3 Dependency Management
-The toolkit will pin the following core dependencies:
-- `supabase >= 2.11.0`: Database client.
-- `google-genai >= 1.2.0`: LLM integration.
-- `tenacity >= 9.0.0`: Retry logic implementation.
+The toolkit implementation MUST include a `requirements.txt` that pins the following core dependencies to specific versions to prevent breaking changes in host projects:
+- `supabase == 2.11.0` (or latest stable)
+- `google-genai == 1.2.0`
+- `tenacity == 9.0.0`
+
+### 6.4 Graceful Degradation
+Failed AI extractions MUST NOT raise unhandled exceptions to the `StateMachine`. Instead, the `AIExtractor` must return a valid JSON object with a project-defined flag (e.g., `requires_review: true`) indicating that human intervention is needed.
 
 ## 7. Testing Strategy
 
@@ -118,7 +121,7 @@ The toolkit itself must be validated independently of the projects using it:
 3.  **Resilience Tests (`AIExtractor`)**: Force API failures to verify that exponential backoff and model fallback trigger correctly.
 4.  **REPL Verification**: Ensure the simulator correctly terminates on `EXIT` and handles `KeyboardInterrupt`.
 
-## 7. Roadmap / V2
+## 8. Roadmap / V2
 
 - **Rich Media**: Implementation of a `Message` object to parse image URLs and voice notes.
 - **Storage Adapters**: Interface-based persistence to support Redis or In-Memory storage.
