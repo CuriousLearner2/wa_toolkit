@@ -122,7 +122,7 @@ Provides a consistent exception hierarchy so projects can catch specific toolkit
 *   `WAToolkitError`: Base exception for all toolkit-related issues.
 *   `AIExtractionError`: Raised when the LLM fails after all retries and fallback models.
 *   `SessionError`: Raised when database operations fail or the schema is invalid.
-*   `StateNotFoundError`: Raised if the session is in a state with no registered handler.
+*   `StateNotFoundError`: Raised by `StateMachine.handle()` if the session's current state has no registered handler.
 
 ---
 
@@ -183,7 +183,7 @@ def run(
 
 ## Engineering Standards
 
-1. **Dependency Stability**: `wa_toolkit` pins its dependencies (like `supabase-py` and `google-genai`) to specific versions to ensure that host projects (like Replate) don't face breaking changes during upstream updates.
+1. **Dependency Stability**: Core dependencies (like `supabase-py` and `google-genai`) will be pinned to specific versions in the formal release to ensure that host projects don't face breaking changes.
 2. **Stateless Handlers**: Handlers MUST remain pure functions of `(phone, message, data)`. They should not manage database connections or persistence directly; that is the role of the `StateMachine` and `SessionManager`.
 3. **Graceful Degradation**: If the AI extraction fails all retries and fallback models, it must return a valid JSON object with a project-defined flag (e.g., `requires_review: true`) indicating that human intervention is needed, rather than crashing.
 
