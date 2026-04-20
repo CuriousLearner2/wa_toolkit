@@ -44,7 +44,6 @@ wa_toolkit/
 ```
 
 ### 3.1 SessionManager (`session.py`)
-**Base Class**: `SessionManager`
 Responsible for persistence. It assumes a specific PostgreSQL schema in Supabase but allows for a custom table name.
 
 **Implementation Details:**
@@ -57,7 +56,6 @@ Responsible for persistence. It assumes a specific PostgreSQL schema in Supabase
     - `delete(phone)`: Removes the session from the database.
 
 ### 3.2 StateMachine (`state_machine.py`)
-**Base Class**: `StateMachine`
 The orchestrator. It manages the lifecycle of a message from arrival to reply.
 
 **Key Features:**
@@ -67,7 +65,6 @@ The orchestrator. It manages the lifecycle of a message from arrival to reply.
 - **Validation**: During the dispatch phase, if the current session state has no registered handler, the `StateMachine` MUST raise a `StateNotFoundError`.
 
 ### 3.3 AIExtractor (`ai_extractor.py`)
-**Base Class**: `AIExtractor`
 A wrapper around the Google GenAI SDK (Gemini) with built-in resilience.
 
 **Robustness Strategy & Retry Policy:**
@@ -115,13 +112,14 @@ The toolkit MUST NOT use `print()` statements. It will use a named Python logger
 Domain handlers registered with the `StateMachine` MUST adhere to the following contract:
 - **Input**: `(phone: str, message: Any, data: dict)`
 - **Output**: `tuple[str, str, dict]` -> `(reply_text, next_state, updated_data)`
-- **No-Op Logic**: If a handler makes no changes to the data, it should return the original `data` object to avoid redundant DB writes.
+
+**No-Op Write Optimization**: To minimize database IO, the `StateMachine` MUST compare the handler's output (`next_state`, `updated_data`) against the current session state. If both remain unchanged, the `StateMachine` MUST skip the `SessionManager.update()` call.
 
 ### 6.3 Dependency Management
-The toolkit implementation MUST include a `requirements.txt` that pins the following core dependencies to specific versions to prevent breaking changes in host projects:
-- `supabase == 2.11.0` (or latest stable)
-- `google-genai == 1.2.0`
-- `tenacity == 9.0.0`
+The toolkit implementation MUST include a `requirements.txt` that defines the tested range of core dependencies. Exact versions should be pinned at release time to prevent breaking changes in host projects:
+- `supabase >= 2.11.0`
+- `google-genai >= 1.2.0`
+- `tenacity >= 9.0.0`
 
 ### 6.4 Graceful Degradation
 Failed AI extractions MUST NOT raise unhandled exceptions to the `StateMachine`. Instead, the `AIExtractor` must return a valid JSON object with a project-defined flag (e.g., `requires_review: true`) indicating that human intervention is needed.
