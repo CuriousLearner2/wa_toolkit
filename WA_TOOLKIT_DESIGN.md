@@ -19,6 +19,13 @@ graph TD
     F <-->|Generate| G[Gemini API]
     E -->|Return| B
     B -->|Reply| A
+    
+    subgraph Errors
+    H[errors.py]
+    end
+    B -.->|Raises| H
+    C -.->|Raises| H
+    F -.->|Raises| H
 ```
 
 ## 3. Core Components
@@ -46,7 +53,8 @@ Responsible for persistence. It assumes a specific PostgreSQL schema in Supabase
 - **Methods**:
     - `get(phone)`: Returns a `dict` representing the session.
     - `create(phone, state)`: Initializes a session using `.upsert()`.
-    - `update(phone, state, data)`: Persists both `state` and `temp_data` in a single `.update()` call to ensure transactional consistency. Individual methods for updating state or data independently are NOT exposed in the public API.
+    - `update(phone, state, data)`: Persists both `state` and `temp_data` in a single `.update()` call to ensure transactional consistency. (Partial update methods for state or data only are NOT exposed).
+    - `delete(phone)`: Removes the session from the database.
 
 ### 3.2 StateMachine (`state_machine.py`)
 **Base Class**: `StateMachine`
@@ -55,7 +63,8 @@ The orchestrator. It manages the lifecycle of a message from arrival to reply.
 **Key Features:**
 - **Command Interception**: Intercepts "system" commands (`RESET`, `STOP`, `NEW`) before they reach domain handlers.
 - **Robust Error Handling**: Wraps handler execution in `try/except` to prevent bot crashes.
-- **V1 Media Readiness**: The `handle(phone, message)` signature accepts `Any` for the message to remain forward-compatible with future V2 rich-media objects (containing URLs or MIME types).
+- **V1 Media Readiness**: The `handle(phone, message)` signature accepts `Any` for the message to remain forward-compatible with future V2 rich-media objects.
+- **Validation**: During the dispatch phase, if the current session state has no registered handler, the `StateMachine` MUST raise a `StateNotFoundError`.
 
 ### 3.3 AIExtractor (`ai_extractor.py`)
 **Base Class**: `AIExtractor`
@@ -77,7 +86,7 @@ The toolkit defines a hierarchy of exceptions:
 - `WAToolkitError`: Base class.
 - `AIExtractionError`: Failed after all retries and fallbacks.
 - `SessionError`: Database connection or schema mismatch issues.
-- `StateNotFoundError`: Attempted to transition to a state with no registered handler.
+- `StateNotFoundError`: Raised by `StateMachine` if it attempts to dispatch to a state with no registered handler.
 
 ## 5. Configuration & Environment
 The toolkit relies on the following environment variables. Host applications are responsible for loading these (e.g., via `python-dotenv`) before initializing toolkit components.
@@ -124,4 +133,5 @@ The toolkit itself must be validated independently of the projects using it:
 ## 8. Roadmap / V2
 
 - **Rich Media**: Implementation of a `Message` object to parse image URLs and voice notes.
+- **Provider Agnostic**: Support for Twilio and Meta Cloud API through a unified `MessageAdapter`.
 - **Storage Adapters**: Interface-based persistence to support Redis or In-Memory storage.
