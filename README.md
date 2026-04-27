@@ -41,35 +41,25 @@ Each project that uses `wa_toolkit` only writes:
 
 ### `session.py` — SessionManager
 
-Manages a `whatsapp_sessions` table in Supabase. The schema is fixed:
-
-```sql
-CREATE TABLE whatsapp_sessions (
-  phone_number TEXT PRIMARY KEY,
-  state        TEXT NOT NULL,
-  temp_data    JSONB DEFAULT '{}',
-  updated_at   TIMESTAMPTZ DEFAULT now()
-);
-```
+Manages a `whatsapp_sessions` table in Supabase.
 
 **API:**
 
 ```python
 class SessionManager:
-    def __init__(self, supabase_client, table: str = "whatsapp_sessions"):
+    def __init__(self, client: Client, table_name: str = "whatsapp_sessions", phone_column: str = "phone"):
         ...
 
     def get(self, phone: str) -> dict | None:
         """Return the session row for this phone, or None if it doesn't exist."""
 
-    def create(self, phone: str, initial_state: str) -> dict:
+    def create(self, phone: str, state: str) -> dict:
         """Upsert a fresh session in initial_state with empty temp_data."""
 
-    def update(self, phone: str, state: str, data: dict) -> None:
+    def update(self, phone: str, state: str, data: dict) -> dict:
         """
         Transition state and merge data in a single write.
-        Internal helper methods for state-only or data-only writes are NOT exposed
-        to ensure transactional consistency.
+        Returns the updated session row.
         """
 
     def delete(self, phone: str) -> None:
@@ -137,44 +127,42 @@ class AIExtractor:
     def __init__(
         self,
         api_key: str,
-        primary_model: str = "gemini-flash-latest",
-        fallback_model: str = "gemini-flash-lite-latest",
+        primary_model: str = "gemini-2.0-flash-001",
+        fallback_model: str = "gemini-2.0-flash-lite-preview-02-05",
         mock_fn: Callable[[str], dict] | None = None,
         mock_env_var: str = "MOCK_AI",
     ):
         ...
 
-    def extract(self, prompt: str, schema: dict) -> dict:
+    def extract(self, prompt: str, response_model: Type[BaseModel] | None = None, config: dict | None = None) -> dict:
         """
-        Call the LLM with the given prompt, expecting a JSON response
-        matching schema.
+        Call the LLM with the given prompt. Supports Pydantic response_model for structured extraction.
         """
 ```
 
 **Retry policy**:
 - **5 attempts** with exponential backoff: 4s min, 20s max.
-- **Model Fallback**: If the primary model fails (quota or API error), it automatically tries the fallback model.
-- **Graceful Failure**: If both models fail, it calls the `mock_fn` (if provided). If no mock function exists, it re-raises the final exception.
+- **Model Fallback**: If the primary model fails, it automatically tries the fallback model.
+- **Graceful Failure**: If both models fail, it calls the `mock_fn` (if provided).
 
 ---
 
 ### `simulator.py` — REPL Harness
 
-A command-line loop for testing a bot locally without Meta infrastructure.
+A command-line loop for testing a bot locally.
 
 **API:**
 
 ```python
 def run(
     handle_fn: Callable[[str, Any], str],
-    default_phone: str = "+14155550000",
-    banner: str = "WhatsApp Bot Simulator",
+    phone: str = "+1234567890",
+    welcome_text: str = "--- WhatsApp Simulator (Type 'EXIT' or 'QUIT' to stop) ---"
 ):
     """
     Start an interactive REPL.
-    - Reads phone number from --phone CLI arg (default: default_phone).
     - Loops on input(), calls handle_fn(phone, message), prints reply.
-    - EXIT quits; KeyboardInterrupt exits cleanly.
+    - EXIT or QUIT terminates the loop.
     """
 ```
 

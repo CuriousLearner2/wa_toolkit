@@ -44,7 +44,7 @@ wa_toolkit/
 ```
 
 ### 3.1 SessionManager (`session.py`)
-Responsible for persistence. It assumes a specific PostgreSQL schema in Supabase but allows for a custom table name.
+Responsible for persistence. It assumes a specific PostgreSQL schema in Supabase but allows for a custom table name and phone column.
 
 **Implementation Details:**
 - **Storage**: Supabase `JSONB` for `temp_data` to allow arbitrary key-value storage per project.
@@ -71,8 +71,8 @@ A wrapper around the Google GenAI SDK (Gemini) with built-in resilience.
 1.  **Attempts**: The system makes up to **5 attempts** per extraction.
 2.  **Backoff**: Uses exponential backoff (min 4s, max 20s) between retries to handle rate limits (429) or transient API failures.
 3.  **Model Fallback Chain**:
-    *   Primary: Attempt using `gemini-flash-latest`.
-    *   Fallback: On primary failure, switch to `gemini-flash-lite-latest` for higher throughput/lower cost.
+    *   Primary: Attempt using `gemini-2.0-flash-001`.
+    *   Fallback: On primary failure, switch to `gemini-2.0-flash-lite-preview-02-05`.
 4.  **Final Fallback (Mock)**: If both models fail after all retries, the system calls the project-provided `mock_fn` (e.g., regex-based extraction).
 5.  **Termination**: If no `mock_fn` is provided and the chain fails, a `AIExtractionError` is raised.
 6.  **Offline Mode**: If `MOCK_AI=true` in the environment, it bypasses the API entirely and calls the `mock_fn`.
