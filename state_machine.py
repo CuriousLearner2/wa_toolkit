@@ -40,14 +40,14 @@ class StateMachine:
             return None
 
         cmd = message.strip().upper()
-        if cmd in ("RESET", "NEW"):
+        if cmd in ("RESET", "NEW", "START"):
             logger.info(f"System command {cmd} received for {phone}. Resetting session.")
             self.session_manager.delete(phone)
             self.session_manager.create(phone, self.initial_state)
             return self.welcome_message
         
-        if cmd == "STOP":
-            logger.info(f"System command STOP received for {phone}. Deleting session.")
+        if cmd in ("STOP", "CANCEL"):
+            logger.info(f"System command {cmd} received for {phone}. Deleting session.")
             self.session_manager.delete(phone)
             return "Session ended. Send any message to start again."
         

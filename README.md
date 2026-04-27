@@ -113,6 +113,7 @@ Provides a consistent exception hierarchy so projects can catch specific toolkit
 *   `AIExtractionError`: Raised when the LLM fails after all retries and fallback models.
 *   `SessionError`: Raised when database operations fail or the schema is invalid.
 *   `StateNotFoundError`: Raised by `StateMachine.handle()` if the session's current state has no registered handler.
+*   `InvalidHandlerOutput`: Raised if a handler returns an invalid tuple format (e.g., missing return values).
 
 ---
 
