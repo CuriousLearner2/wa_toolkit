@@ -54,4 +54,17 @@ Technology is great, but sometimes a human touch is required.
 *   **The Feature:** If the bot gets confused (e.g., a customer asks, *"Can I propose to my girlfriend at the corner table and have you hide the ring in a cake?"*), it doesn't try to guess.
 *   **The Action:** It immediately alerts your manager's phone and says: *"I have a complex request from Table 4. Please take over."* 
 
+---
+
+## 7. The "Front Door": Meta AI Studio vs. The Toolkit
+You may have heard of **Meta AI Studio**—a tool that allows you to build AI bots using simple natural language prompts. We view this as the "Front Door" to your digital restaurant.
+
+*   **Meta AI Studio (The Friendly Receptionist):** This is excellent for handling the "chatter." It can answer questions about your history, your dress code, or whether you have a patio. It’s easy to set up and very "human" in its tone.
+*   **The Toolkit (The Professional Manager):** While the AI Studio handles the talk, our **Toolkit** handles the **transaction**. When a guest says "I want to book a table," our toolkit takes over to ensure the date is valid, the party size is within your limits, and the data is saved securely in your private database.
+
+### How they work together:
+We can combine both. Meta AI Studio greets the guest and answers their general questions. The moment the guest is ready to "do business" (book a table or place an order), our toolkit steps in to handle the logistics and the **Smart Waitlist**. This gives you the best of both worlds: a bot that is both incredibly friendly and mathematically precise.
+
+---
+
 **Summary:** The toolkit isn't just a "chat program"—it’s a digital employee that uses memory, listening skills, and your specific rules to run your front-of-house more efficiently.
