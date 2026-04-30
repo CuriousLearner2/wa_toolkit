@@ -67,4 +67,18 @@ We can combine both. Meta AI Studio greets the guest and answers their general q
 
 ---
 
-**Summary:** The toolkit isn't just a "chat program"—it’s a digital employee that uses memory, listening skills, and your specific rules to run your front-of-house more efficiently.
+## 8. The "Digital Form": WhatsApp Flows
+Beyond just chatting, Meta offers **WhatsApp Flows**. Think of this as a "Mini-App" that opens right inside the chat window.
+
+*   **How it works:** Instead of typing out a long sentence, the guest can click a button and a professional form pops up. They can use a calendar to pick a date, a dropdown to select a time, and a simple counter for their party size.
+*   **Why it matters:** It is faster for the guest and ensures that the information we get is 100% accurate. There are no "typos" with a digital form.
+
+### The "Pro" Setup: AI + Flows + Toolkit
+This is the ultimate setup for a modern restaurant:
+1.  **Meta AI Studio** greets the guest and answers their questions (The Personality).
+2.  **WhatsApp Flows** provides the easy-to-use booking form (The Interface).
+3.  **The Toolkit** saves the data, manages your table availability, and handles the **Smart Waitlist** (The Brain).
+
+---
+
+**Summary:** This combination of tools turns your WhatsApp into more than just a messaging app—it becomes a high-performance logistics and sales engine that works for you 24/7.
